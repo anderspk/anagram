@@ -1,24 +1,57 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { findAnagrams } from "./utils/anagramUtils";
+import ErrorMessage from "./components/errorMessage/errorMessage";
+import "./App.scss";
+import Anagram from "./components/anagram/anagram";
 
 function App() {
+  const [wordList, setWordList] = useState([]);
+  const [anagrams, setAnagrams] = useState({});
+  const [displayAnagrams, setDisplayAnagrams] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchOrdbokData = async () => {
+      try {
+        const response = await fetch("./data/ordbok-utf8.txt");
+        const rawData = await response.text();
+        const wordList = rawData
+          .replace(/(\r\n|\n|\r)/gm, " ")
+          .split(" ")
+          .filter((word) => !!word);
+
+        setWordList(wordList);
+        const wordsWithAnagrams = findAnagrams(wordList);
+        setAnagrams(wordsWithAnagrams);
+      } catch (error) {
+        setError("Det skjedde en feil under henting av ordbok");
+      }
+    };
+
+    fetchOrdbokData();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app">
+      <ErrorMessage>{error}</ErrorMessage>
+      <button
+        className={displayAnagrams ? "display-anagrams" : ""}
+        onClick={() => setDisplayAnagrams(!displayAnagrams)}
+      >
+        {displayAnagrams ? "Vis Ordbok" : "Vis Anagrammer"}
+      </button>
+      <ul>
+        {displayAnagrams
+          ? wordList.map((word) =>
+              anagrams[word] ? (
+                <li key={word}>
+                  {word}
+                  <Anagram anagrams={anagrams[word]} />
+                </li>
+              ) : null
+            )
+          : wordList.map((word) => <li key={word}>{word}</li>)}
+      </ul>
     </div>
   );
 }
